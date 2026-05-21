@@ -80,7 +80,7 @@ for cc in CASE_CLASSES:
     export_url = (
         f"https://www.coloradojudicial.gov/dockets/export"
         f"?judicialDistrict={JUDICIAL_DISTRICT}"
-        f"&datesEventScheduled%5B0%5D=20260201"     #{today_str}
+        f"&datesEventScheduled%5B0%5D={today_str}"
         f"&datesEventScheduled%5B1%5D={today_str}"
         f"&caseClass={cc}"
         f"&courtLocations%5B0%5D={COURT_LOCATION}"
@@ -111,6 +111,14 @@ for cc in CASE_CLASSES:
                 row['scraped_at']  = scraped_at
             all_records.extend(rows)
             print(f"  [{cc}] ✓ {len(rows)} kayıt")
+
+            all_keys_tmp = list(dict.fromkeys(k for r in all_records for k in r.keys()))
+            with open(CSV_OUTPUT, 'w', newline='', encoding='utf-8-sig') as f:
+                writer = csv.DictWriter(f, fieldnames=all_keys_tmp, extrasaction='ignore')
+                writer.writeheader()
+                writer.writerows(all_records)
+            print(f"  💾 Toplam {len(all_records)} kayıt kaydedildi")
+
         except Exception as e:
             print(f"  [{cc}] CSV parse hatası: {e}")
             print(f"  İçerik başlangıcı: {content_stripped[:300]}")
@@ -132,6 +140,14 @@ for cc in CASE_CLASSES:
                         row['scraped_at'] = scraped_at
                     all_records.extend(rows)
                     print(f"  [{cc}] ✓ {len(rows)} kayıt (headless)")
+
+                    all_keys_tmp = list(dict.fromkeys(k for r in all_records for k in r.keys()))
+                    with open(CSV_OUTPUT, 'w', newline='', encoding='utf-8-sig') as f:
+                        writer = csv.DictWriter(f, fieldnames=all_keys_tmp, extrasaction='ignore')
+                        writer.writeheader()
+                        writer.writerows(all_records)
+                    print(f"  💾 Toplam {len(all_records)} kayıt kaydedildi")
+
                 except Exception as e:
                     print(f"  [{cc}] Headless CSV parse hatası: {e}")
             else:
@@ -172,3 +188,24 @@ if all_records:
     print(f"Sütunlar: {', '.join(all_keys)}")
 else:
     print("Hiç kayıt toplanamadı.")
+
+
+WEBHOOK_URL = "https://kinglyenterprise.app.n8n.cloud/webhook/a5dc0312-6225-40b4-91ed-deda0fe4fbd7"
+BATCH_SIZE  = 100
+
+if all_records:
+    for i in range(0, len(all_records), BATCH_SIZE):
+        batch = all_records[i:i + BATCH_SIZE]
+        resp  = requests.post(WEBHOOK_URL, json=batch)
+        print(f"Webhook batch {i//BATCH_SIZE + 1}: {resp.status_code} ({len(batch)} kayıt)")
+        time.sleep(1)
+else:
+    print("Webhook: Gönderilecek veri yok")
+
+
+import json
+
+with open("dockets.json", "w", encoding="utf-8") as f:
+    json.dump(all_records, f, ensure_ascii=False, indent=2)
+
+print("dockets.json kaydedildi.")
