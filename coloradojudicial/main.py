@@ -190,7 +190,7 @@ else:
     print("Hiç kayıt toplanamadı.")
 
 
-WEBHOOK_URL = "https://kinglyenterprise.app.n8n.cloud/webhook/a5dc0312-6225-40b4-91ed-deda0fe4fbd7"
+WEBHOOK_URL = "https://kinglyenterprise.app.n8n.cloud/webhook/scraper-v2-ingest"
 BATCH_SIZE  = 100
 
 if all_records:
